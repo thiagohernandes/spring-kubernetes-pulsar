@@ -1,0 +1,32 @@
+spring:
+  profiles:
+    active: dev
+
+---
+
+# DEV
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+environment: dev
+port: 9000
+
+server:
+  port: 9000
+
+---
+
+# PROD
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+environment: prod
+port: 9001
+
+server:
+  port: 9001
+
