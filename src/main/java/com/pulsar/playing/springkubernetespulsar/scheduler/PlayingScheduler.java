@@ -1,5 +1,6 @@
 package com.pulsar.playing.springkubernetespulsar.scheduler;
 
+import com.pulsar.playing.springkubernetespulsar.event.TopicPlayingEvent;
 import com.pulsar.playing.springkubernetespulsar.listener.constants.ClientConstants;
 import com.pulsar.playing.springkubernetespulsar.listener.producer.PlayingProducer;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,10 @@ public class PlayingScheduler {
 
     @Scheduled(fixedRate = 5000)
     public void scheduler() {
-        playingProducer.simpleProducer(ClientConstants.TOPIC_PLAYING, dateTimeFormatter.format(LocalDateTime.now()));
+        playingProducer.simpleProducer(ClientConstants.TOPIC_PLAYING, TopicPlayingEvent.builder()
+                .topic(ClientConstants.TOPIC_PLAYING)
+                .value(dateTimeFormatter.format(LocalDateTime.now()))
+            .build());
     }
 
 }

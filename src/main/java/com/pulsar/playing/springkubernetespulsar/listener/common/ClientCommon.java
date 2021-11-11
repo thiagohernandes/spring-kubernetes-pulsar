@@ -1,5 +1,6 @@
 package com.pulsar.playing.springkubernetespulsar.listener.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pulsar.playing.springkubernetespulsar.event.TopicPlayingEvent;
 import com.pulsar.playing.springkubernetespulsar.listener.constants.ClientConstants;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class ClientCommon {
 
     private final ApplicationEventPublisher publisher;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PulsarClient connect() throws PulsarClientException {
         try {
@@ -46,16 +48,13 @@ public class ClientCommon {
         }
     }
 
-    public void producer(final String topic, final String message) {
+    public void producer(final String topic, final TopicPlayingEvent message) {
         try (Producer<byte[]> producer = connect()
                 .newProducer()
                 .topic(topic)
                 .create()) {
-            producer.send(message.getBytes());
-            publisher.publishEvent(TopicPlayingEvent.builder()
-                    .topic(topic)
-                    .value(message)
-                    .build());
+            producer.send(objectMapper.writeValueAsBytes(message));
+            publisher.publishEvent(message);
             log.info("Message success sended: [TOPIC] {} - [MESSAGE] {}", topic, message);
         } catch (Exception e) {
             log.error("Error on simple producer: {}", e.getMessage());
