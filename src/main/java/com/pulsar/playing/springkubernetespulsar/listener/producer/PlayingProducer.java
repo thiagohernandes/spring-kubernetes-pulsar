@@ -3,6 +3,7 @@ package com.pulsar.playing.springkubernetespulsar.listener.producer;
 import com.pulsar.playing.springkubernetespulsar.event.TopicPlayingEvent;
 import com.pulsar.playing.springkubernetespulsar.listener.common.ClientCommon;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PlayingProducer {
 
-    private final ClientCommon clientCommon;
+    private final ClientCommon<TopicPlayingEvent> clientCommon;
 
-    public void simpleProducer(final String topic, final TopicPlayingEvent message) {
-        clientCommon.producer(topic, message);
+    @SneakyThrows
+    public void producer(final String topic, final TopicPlayingEvent message, final Long messageId) {
+        clientCommon.producer(topic, message, messageId);
     }
+
 }
