@@ -1,6 +1,6 @@
 package com.pulsar.playing.springkubernetespulsar.listener.consumer;
 
-import com.pulsar.playing.springkubernetespulsar.event.TopicPlayingEvent;
+import com.pulsar.playing.springkubernetespulsar.listener.event.TopicPlayingEvent;
 import com.pulsar.playing.springkubernetespulsar.listener.common.ClientCommon;
 import com.pulsar.playing.springkubernetespulsar.listener.constants.ClientConstants;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +18,9 @@ public class PlayingConsumer1 implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        clientCommon.consumer(ClientConstants.CONSUMER_1, ClientConstants.MY_TOPIC_D,
-            ClientConstants.SUBSCRIPTION_1,
+        clientCommon.consumerAsync(ClientConstants.CONSUMER_1,
+            ClientConstants.MY_TOPIC_D,
+            ClientConstants.SUBSCRIPTION_2,
             SubscriptionType.Exclusive);
     }
 }

@@ -1,6 +1,6 @@
 package com.pulsar.playing.springkubernetespulsar.scheduler;
 
-import com.pulsar.playing.springkubernetespulsar.event.TopicPlayingEvent;
+import com.pulsar.playing.springkubernetespulsar.listener.event.TopicPlayingEvent;
 import com.pulsar.playing.springkubernetespulsar.listener.common.ClientCommon;
 import com.pulsar.playing.springkubernetespulsar.listener.constants.ClientConstants;
 import com.pulsar.playing.springkubernetespulsar.listener.producer.PlayingProducer;
@@ -20,17 +20,16 @@ public class PlayingScheduler1 {
 
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final PlayingProducer playingProducer;
-    private final ClientCommon<TopicPlayingEvent> clientCommon;
 
     @SneakyThrows
     @Scheduled(fixedRate = 5000)
     public void scheduler() {
         final String topic = ClientConstants.MY_TOPIC_D;
-        playingProducer.producer(topic, TopicPlayingEvent.builder()
+        playingProducer.producer(topic,
+            TopicPlayingEvent.builder()
                 .topic(topic)
                 .value(dateTimeFormatter.format(LocalDateTime.now()))
-                .build(),
-            15555555L);
+                .build());
     }
 
 }

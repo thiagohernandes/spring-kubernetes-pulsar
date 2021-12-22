@@ -31,7 +31,7 @@ public class ClientCommon<T> {
         }
     }
 
-    public void producer(final String topic, final T message, final Long sequenceId)
+    public void producer(final String topic, final T message)
         throws PulsarClientException {
         PulsarClient client = connect();
         try (client; Producer<T> producer = client
@@ -39,12 +39,10 @@ public class ClientCommon<T> {
             .topic(topic)
             .create()) {
             producer.newMessage()
-                .sequenceId(sequenceId)
-                .key("key")
                 .value(message).send();
-            log.info("---> Message success on send/publish: [TOPIC] {} - [MESSAGE] {}", topic, message);
+            log.info("---> Message sync success on send/publish: [TOPIC] {} - [MESSAGE] {}", topic, message);
         } catch (PulsarClientException e) {
-            log.error("Error on producer: {}", e.getMessage());
+            log.error("Error on producer sync: {}", e.getMessage());
             throw e;
         }
     }
@@ -55,25 +53,76 @@ public class ClientCommon<T> {
             PulsarClient client = connect();
             final ConsumerBuilder<T> consumerBuilder = client.newConsumer(Schema.JSON(tClass))
                 .topic(topicName)
-                .subscriptionName(subscriptionName).messageListener((consumer, message) ->
-                    log.info("Consumer {} - Message value ->>>> {}", consumer.getConsumerName(), message.getValue()))
+                .subscriptionName(subscriptionName).messageListener((consumer, message) -> {
+                    try {
+                        consumer.acknowledge(message);
+                    } catch (PulsarClientException e) {
+                        log.error("Error on ack {}", message, e);
+                    }
+                    log.info("Consumer sync {} - Message value ->>>> {}",
+                        consumer.getConsumerName(), message.getValue());
+                })
                 .subscriptionType(subscriptionType);
             consumerBuilder
                 .consumerName(consumerName)
                 .subscribe();
         } catch (PulsarClientException e) {
-            log.error("Error on consumer: {} - topic {} - subscriptionName {} - error -> {} ",
+            log.error("Error on consumer sync: {} - topic {} - subscriptionName {} - error -> {} ",
                 consumerName, topicName, subscriptionName, e.getMessage());
             throw e;
         }
     }
 
-    public void reader(final String topicName)
+    public void producerAsync(final String topic, final T message)
+        throws PulsarClientException {
+        PulsarClient client = connect();
+        try (client; Producer<T> producer = client
+            .newProducer(Schema.JSON(tClass))
+            .topic(topic)
+            .create()) {
+            producer.newMessage()
+                .value(message)
+                .sendAsync()
+                .thenAccept(msg -> log.info("Message id {} received", msg))
+                .exceptionally(ex -> {
+                    log.error("Error on accept producer async, {}", ex.getMessage(), ex);
+                    return null;
+                });
+            log.info("---> Message async success on send/publish: [TOPIC] {} - [MESSAGE] {}", topic, message);
+        } catch (PulsarClientException e) {
+            log.error("Error on producer async: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    public void consumerAsync(final String consumerName, final String topicName, final String subscriptionName,
+        final SubscriptionType subscriptionType) throws PulsarClientException {
+        try {
+            PulsarClient client = connect();
+            final ConsumerBuilder<T> consumerBuilder = client.newConsumer(Schema.JSON(tClass))
+                .topic(topicName)
+                .subscriptionName(subscriptionName).messageListener((consumer, message) -> {
+                    consumer.receiveAsync();
+                    log.info("Consumer async {} - Message value ->>>> {}",
+                        consumer.getConsumerName(), message.getValue());
+                })
+                .subscriptionType(subscriptionType);
+            consumerBuilder
+                .consumerName(consumerName)
+                .subscribeAsync();
+        } catch (PulsarClientException e) {
+            log.error("Error on consumer async: {} - topic {} - subscriptionName {} - error -> {} ",
+                consumerName, topicName, subscriptionName, e.getMessage());
+            throw e;
+        }
+    }
+
+    public void reader(final String topicName, final MessageId messageId)
         throws IOException {
         PulsarClient client = connect();
         try (Reader<T> reader = client.newReader(Schema.JSON(tClass))
             .topic(topicName)
-            .startMessageId(MessageId.earliest)
+            .startMessageId(messageId)
             .create()) {
             while (reader.hasMessageAvailable()) {
                 Message<T> message = reader.readNext();
@@ -85,47 +134,5 @@ public class ClientCommon<T> {
             throw e;
         }
     }
-
-//
-//
-//
-//
-//
-//    public void consumerAsync(final String consumerName, final String topicName,
-//        final SubscriptionType subscriptionType) throws PulsarClientException {
-//        try {
-//            connect()
-//                .newConsumer()
-//                .topic(topicName)
-//                .subscriptionName(consumerName)
-//                .subscriptionType(subscriptionType)
-//                .subscribeAsync();
-//            log.info("Consumer Async Success Created on Apache Pulsar!");
-//        } catch (Exception e) {
-//            log.error("Error on consumer: {} ", e.getMessage());
-//        }
-//    }
-//
-//    public void producerAsync(final String topic, final TopicPlayingEvent message,
-//        final ProducerAccessMode accessMode) throws PulsarClientException {
-//        try (final Producer<byte[]> producer = connect()
-//            .newProducer()
-//            .topic(topic)
-//            .accessMode(accessMode)
-//            .create()) {
-//            producer.sendAsync(objectMapper.writeValueAsBytes(message));
-//            publisher.publishEvent(message);
-//            producer.closeAsync()
-//                .thenRun(() -> log.info("Producer closed"))
-//                .exceptionally((ex) -> {
-//                    log.error("Failed to close producer: {}", ex);
-//                    return null;
-//                });
-//            log.info("Message success on send/publish: [TOPIC] {} - [MESSAGE] {}", topic, message);
-//        } catch (Exception e) {
-//            log.error("Error on producer: {}", e.getMessage());
-//            throw new PulsarClientException("Problems on consumer creation!");
-//        }
-//    }
 
 }
